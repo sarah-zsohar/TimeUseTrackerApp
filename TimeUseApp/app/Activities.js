@@ -6,7 +6,9 @@ import {
   StyleSheet,
   Text,
   View,
-  TouchableHighlight
+  TouchableHighlight,
+  TextInput,
+  Keyboard
 } from 'react-native';
 
 import {getCurrentActivity, setCurrentActivity} from './Storage'
@@ -17,8 +19,8 @@ var _this;
       super();
       _this=this;
       this.state = {
-        activities: ["Cooking", "Eating", "Hygiene", "Beauty Stuff", "Sleeping", "Video Games", "Social Media", "TV", "Driving", "At Work", 
-        "Dog Care", "Working Out", "In Bed Trying to Sleep", "Shopping"],
+        activities:{Food: ["Cooking", "Eating", "Grocery Shopping", "Purchasing Food"], Personal_Care: ["Showering", "General Grooming", "Beauty Stuff"],
+         Entertainment:["Video Games", "TV", "Reddit", "Facebook"],Dog_Care: ["Walking", "General Care"], Other:["Cleaning","Sleeping", "Driving", "At Work[On Task]", "At Work[Distracted]", "At Work[Skype Call]", "Exercise", "Socializing"]}, 
         currentActivity:'none',
         debugMsg:'no message'};
   }
@@ -29,22 +31,12 @@ var _this;
         currentActivity: activity
       })
     })
-
-    let activities=this.state.activities;
-    activities.sort((a, b)=>{
-      return a-b
-    })
-
-    this.setState({
-      activities:activities
-    })
   }
   addActivityToDb(activity){
 
       var data=`activity=${activity}`
       var request = new XMLHttpRequest();
 
-      console.log(data)
       request.open("POST", "http://sarahzsohar.com/postData");
       request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
       request.send(data);
@@ -58,9 +50,12 @@ var _this;
       
   }
   checkChange(selectedActivity){
+    Keyboard.dismiss();
+
     if(this.state.currentActivity != selectedActivity){
       _this.setState({
-        currentActivity:selectedActivity
+        currentActivity:selectedActivity,
+        text:''
       })
       _this.addActivityToDb(selectedActivity)
       setCurrentActivity(selectedActivity);
@@ -68,6 +63,23 @@ var _this;
   }
   render() {
     let column_length = this.state.activities.length
+    function buildSubHeadings(heading, index){
+        return (
+       _this.state.activities[heading].map((activity, index)=>{
+              return(
+                      <View>
+                      {index === 0 ? <Text style={{fontSize:16}}>{heading}</Text> : null}
+                      <TouchableHighlight 
+                      style={[styles.touchableButton, _this.state.currentActivity === activity ? {backgroundColor:'#99d9f4'}:{ backgroundColor:'#fccc92'}]}
+                      underlayColor='#99d9f4'
+                      onPress={() => _this.checkChange(activity)}
+                      ><Text style={{textAlign:'center'}}>{activity}</Text>
+                      </TouchableHighlight>
+                      </View>
+                  )
+           })
+        )
+    }
     return (
       <View style={styles.container}>
         <Text style={{fontSize:20, paddingBottom:15}}>
@@ -76,40 +88,41 @@ var _this;
         <View style={{flexDirection: "row", justifyContent:"space-around", flex:6}}>
         <View style={{flexDirection: "column",  alignItems:'center',justifyContent:"space-around", flex:1}}>
         {this.state.activities &&
-          this.state.activities.map((activity, index)=>{
-            if(index < 7){
-               return(
-                  <TouchableHighlight 
-                  style={styles.touchableButton}
-                  underlayColor='#99d9f4'
-                  onPress={() => this.checkChange(activity)}
-                  ><Text style={{textAlign:'center'}}>{activity}</Text>
-                  </TouchableHighlight>
-               )
+          Object.keys(this.state.activities).map((heading, index)=>{
+            if(index < 3){
+             return buildSubHeadings(heading, index)
             }
           })
         }
         </View>
-        <View style={{flexDirection: "column", alignItems:'center',justifyContent:"space-around", flex:1}}>
+        <View style={{flexDirection: "column",  alignItems:'center',justifyContent:"space-around", flex:1}}>
         {this.state.activities &&
-          this.state.activities.map((activity, index)=>{
-         
-            if(index >= 7){
-                 return(
-             <TouchableHighlight 
-             underlayColor='#99d9f4'
-             style={styles.touchableButton}
-             onPress={() => this.checkChange(activity)}
-             ><Text style={{textAlign:'center'}}>{activity}</Text>
-            </TouchableHighlight>
-                 )
+          Object.keys(this.state.activities).map((heading, index)=>{
+            if(index >=3){
+              return buildSubHeadings(heading, index)
             }
           })
         }
+        <View style={{flexDirection:"row"}}>
+        <TextInput
+          style={{height: 30,paddingBottom:0, width:95, borderColor: 'gray', borderWidth: 1}}
+          onChangeText={(text) => this.setState({text})}
+          value={this.state.text}
+          underlineColorAndroid='rgba(0,0,0,0)'
+        />
+        <TouchableHighlight 
+              style={{height:30, paddingTop:5, marginLeft:10, width:35, backgroundColor:'#fccc92'}}
+              onPress={() => _this.checkChange(this.state.text)}
+        >
+        <Text style={{textAlign:'center'}}>Add</Text>
+        </TouchableHighlight>
+
         </View>
         </View>
 
-      <Text style={{flex:1.5, fontSize:14}}>Currently Selected Activity: {this.state.currentActivity}</Text>
+        </View>
+
+      <Text style={{flex:1.5, marginTop:20, fontSize:18}}>Currently Selected Activity: {this.state.currentActivity}</Text>
       </View>
     );
   }
@@ -124,8 +137,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5FCFF',
   },
   touchableButton:{
-    width: 180,
-    height:50,
+    width: 140,
+    height:30,
     paddingTop:5,
     paddingBottom:10,
     backgroundColor:'#fccc92'
